@@ -37,7 +37,7 @@ def main():
     initializer = tf.random_uniform_initializer(-0.05, 0.05)
 
     # 定义训练用的循环神经网络模型。
-    with tf.variable_scope("nmt_model", reuse=None, initializer=initializer):
+    with tf.variable_scope("nmt_model", initializer=initializer):
         model = NMTModel('train')
     config_proto = tf.ConfigProto(
         allow_soft_placement=True,
@@ -71,8 +71,7 @@ def main():
                 # 记录情况
                 # log_writer.add_summary(summary, model.global_step.eval())
 
-                # if batch_index % 100 == 0:
-                if True:
+                if batch_index % 100 == 0:
                     print('已完成{}epoch，保存该模型中'.format(epoch_idx))
                     checkpoint_path = os.path.join(model_path, model_name)
                     model.save(sess, saver, checkpoint_path, global_step=epoch_idx)
