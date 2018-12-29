@@ -88,14 +88,14 @@ class NMTModel(object):
                 "softmax_bias", [TRG_VOCAB_SIZE])
 
             self.dec_cell = rnn.MultiRNNCell(
-                [rnn.LSTMCell(HIDDEN_SIZE, name='LSTM_{}'.format(_)) for _ in range(NUM_LAYERS)])
+                [rnn.LSTMCell(HIDDEN_SIZE, name='LSTM_Go_{}'.format(_)) for _ in range(NUM_LAYERS)])
 
             if self.mode == 'predict':
                 self.build_inference_decoder()
                 # self.build_train_decoder()
             elif self.mode == 'train':
-                self.build_train_decoder()
                 self.build_inference_decoder()
+                self.build_train_decoder()
 
     def build_train_decoder(self):
         trg_emb = tf.nn.embedding_lookup(self.trg_embedding, self.trg_input)
