@@ -92,6 +92,7 @@ class NMTModel(object):
 
             if self.mode == 'predict':
                 self.build_inference_decoder()
+                self.build_train_decoder()
             elif self.mode == 'train':
                 self.build_train_decoder()
                 self.build_inference_decoder()
@@ -180,8 +181,8 @@ class NMTModel(object):
             self.trg_output: trg_output,
             self.trg_size: trg_size
         }
-        cost, _ = sess.run([self.cost_op, self.train_op], feed_dict=feed_dict)
-        return cost
+        loss, _ = sess.run([self.cost_op, self.train_op], feed_dict=feed_dict)
+        return loss
 
     def inference(self, sess, src_input):
         feed_dict = {
@@ -198,5 +199,5 @@ class NMTModel(object):
 
     @staticmethod
     def restore(sess, saver, path):
-        saver.restore(sess, save_path=path)
         print('Model restored from {}'.format(path))
+        saver.restore(sess, save_path=path)
