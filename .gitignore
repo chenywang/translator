@@ -1,0 +1,4 @@
+configs.py
+.idea/
+logs/
+*.pyc
