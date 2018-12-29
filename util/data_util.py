@@ -2,7 +2,6 @@
 # @Author : Michael-Wang
 import tensorflow as tf
 
-
 # 使用Dataset从一个文件中读取一个语言的数据。
 # 数据的格式为每行一句话，单词已经转化为单词编号。
 from config import SOS_ID, MAX_LEN
