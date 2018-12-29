@@ -1,9 +1,12 @@
 # -*- coding:utf-8 -*-
 # @Author : Michael-Wang
+import numpy as np
+import pandas as pd
 import tensorflow as tf
-
 # 使用Dataset从一个文件中读取一个语言的数据。
 # 数据的格式为每行一句话，单词已经转化为单词编号。
+from tensorflow.python.keras import preprocessing
+
 from config import SOS_ID, MAX_LEN
 
 
@@ -69,3 +72,52 @@ def MakeSrcTrgDataset(src_path, trg_path, batch_size):
     # 调用padded_batch方法进行batching操作。
     batched_dataset = dataset.padded_batch(batch_size, padded_shapes)
     return batched_dataset
+
+
+def gen_batch_train_data(train_en_path, train_zh_path, batch_size, shuffle=False):
+    chunks_en = pd.read_csv(train_en_path, iterator=True, sep='\t')
+    chunks_zh = pd.read_csv(train_zh_path, iterator=True, sep='\t')
+    while True:
+        try:
+            chunk_en = chunks_en.get_chunk(batch_size)
+            chunk_zh = chunks_zh.get_chunk(batch_size)
+            # 合并成一个df
+            chunk = chunk_en
+            chunk['en'] = chunk['sentence']
+            chunk['zh'] = chunk_zh['sentence']
+            chunk['en'] = chunk['en'].apply(lambda line: line.split(' '))
+            chunk['zh'] = chunk['zh'].apply(lambda line: line.split(' '))
+            chunk['en_len'] = chunk['en'].apply(lambda line: len(line))
+            chunk['zh_len'] = chunk['zh'].apply(lambda line: len(line))
+
+            # 过滤长度不合格的
+            chunk = chunk[chunk['en_len'] <= MAX_LEN]
+            chunk = chunk[chunk['zh_len'] <= MAX_LEN]
+            chunk = chunk[chunk['en_len'] > 1]
+            chunk = chunk[chunk['zh_len'] > 1]
+
+            # 修正target input与target output
+            chunk['target_input'] = chunk['zh']
+            chunk['target_output'] = chunk['zh'].apply(lambda zh_list: [SOS_ID] + zh_list[:-1])
+
+            src_input, src_size, trg_input, trg_output, trg_size = np.array(chunk['en']), np.array(
+                chunk['en_len']), np.array(chunk['target_input']), np.array(
+                chunk['target_output']), np.array(chunk['zh_len'])
+
+            # padding
+            src_input = preprocessing.sequence.pad_sequences(src_input, maxlen=max(chunk['en_len']),
+                                                             padding="post", truncating="post",
+                                                             value=0)
+            trg_input = preprocessing.sequence.pad_sequences(trg_input, maxlen=max(chunk['en_len']),
+                                                             padding="post", truncating="post",
+                                                             value=0)
+            trg_output = preprocessing.sequence.pad_sequences(trg_output, maxlen=max(chunk['en_len']),
+                                                              padding="post", truncating="post",
+                                                              value=0)
+
+            if shuffle:
+                chunk.sample(frac=1.0)
+
+            yield src_input, src_size, trg_input, trg_output, trg_size
+        except StopIteration:
+            break

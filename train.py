@@ -1,30 +1,35 @@
 # -*- coding:utf-8 -*-
 # @Author : Michael-Wang
+import os
+import time
+
 import tensorflow as tf
+from tensorflow.python.platform import flags
 
 # 使用给定的模型model上训练一个epoch，并返回全局步数。
 # 每训练200步便保存一个checkpoint。
-from config import log_path, BATCH_SIZE, NUM_EPOCH, TRG_TRAIN_DATA, SRC_TRAIN_DATA
+from config import model_path, TRG_TRAIN_DATA, SRC_TRAIN_DATA, model_name
 from model.seq2seq_model import NMTModel
-from util.data_util import MakeSrcTrgDataset
+from util.data_util import gen_batch_train_data
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+flags.DEFINE_integer('batch_size', 512, 'Batch size')
+flags.DEFINE_integer('epoch', 100, 'Maximum # of training epochs')
+flags.DEFINE_boolean('retrain', True, 'retrain the model')
+FLAGS = flags.FLAGS
 
 
-def run_epoch(session, cost_op, train_op, saver, step):
-    # 训练一个epoch。
-    # 重复训练步骤直至遍历完Dataset中所有数据。
-    while True:
-        try:
-            # 运行train_op并计算损失值。训练数据在main()函数中以Dataset方式提供。
-            cost, _ = session.run([cost_op, train_op])
-            if step % 10 == 0:
-                print("第 %d batch, 平均交叉熵 %.3f" % (step, cost))
-            # 每200步保存一个checkpoint。
-            if step % 200 == 0:
-                saver.save(session, log_path, global_step=step)
-            step += 1
-        except tf.errors.OutOfRangeError:
-            break
-    return step
+def load_or_create_model(sess, model, saver):
+    ckpt = tf.train.get_checkpoint_state(model_path)
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path) and not FLAGS.retrain:
+        print('Reloading model parameters...')
+        model.restore(sess, saver, ckpt.model_checkpoint_path)
+    else:
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        print('Created new model parameters...')
+        sess.run(tf.global_variables_initializer())
 
 
 def main():
@@ -32,28 +37,44 @@ def main():
     initializer = tf.random_uniform_initializer(-0.05, 0.05)
 
     # 定义训练用的循环神经网络模型。
-    with tf.variable_scope("nmt_model", reuse=None,
-                           initializer=initializer):
-        train_model = NMTModel()
-
-    # 定义输入数据。
-    data = MakeSrcTrgDataset(SRC_TRAIN_DATA, TRG_TRAIN_DATA, BATCH_SIZE)
-    iterator = data.make_initializable_iterator()
-    (src, src_size), (trg_input, trg_label, trg_size) = iterator.get_next()
-
-    # 定义前向计算图。输入数据以张量形式提供给forward函数。
-    cost_op, train_op = train_model.forward(src, src_size, trg_input,
-                                            trg_label, trg_size)
-
-    # 训练模型。
+    with tf.variable_scope("nmt_model", reuse=None, initializer=initializer):
+        model = NMTModel('train')
+    config_proto = tf.ConfigProto(
+        allow_soft_placement=True,
+        log_device_placement=False,
+        gpu_options=tf.GPUOptions(allow_growth=True)
+    )
     saver = tf.train.Saver()
-    step = 0
-    with tf.Session() as sess:
-        tf.global_variables_initializer().run()
-        for i in range(NUM_EPOCH):
-            print("In epoch: %d" % (i + 1))
-            sess.run(iterator.initializer)
-            step = run_epoch(sess, cost_op, train_op, saver, step)
+    with tf.Session(config=config_proto) as sess:
+        load_or_create_model(sess, model, saver)
+        for epoch_idx in range(FLAGS.epoch):
+
+            iterator = gen_batch_train_data(SRC_TRAIN_DATA, TRG_TRAIN_DATA, FLAGS.batch_size, shuffle=False)
+            for batch_index, (src_input, src_size, trg_input, trg_output, trg_size) in enumerate(iterator):
+                start_time = time.time()
+
+                # 训练
+                step_loss = model.train(sess, src_input, src_size, trg_input, trg_output, trg_size)
+
+                # 展示
+                time_elapsed = time.time() - start_time
+                print("第{epoch}个epoch的第{batch}个batch："
+                      "loss为{loss}，"
+                      "花费时间为{time_elapsed}，"
+                      "batch_size为{batch_size}"
+                      .format(epoch=epoch_idx,
+                              batch=batch_index,
+                              loss=step_loss,
+                              time_elapsed=time_elapsed,
+                              batch_size=src_input.shape[0]))
+
+                # 记录情况
+                # log_writer.add_summary(summary, model.global_step.eval())
+
+                # 每个epoch保存一次
+                print('已完成{}epoch，保存该模型中'.format(epoch_idx))
+                checkpoint_path = os.path.join(model_path, model_name)
+                model.save(sess, saver, checkpoint_path, global_step=epoch_idx)
 
 
 if __name__ == "__main__":

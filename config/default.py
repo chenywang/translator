@@ -9,7 +9,8 @@ PROJECT_PATH = os.path.abspath(
 
 project_path = PROJECT_PATH
 data_path = PROJECT_PATH + '/data/'
-log_path = project_path + '/logs/'
+model_path = project_path + '/logs/'
+model_name = 'translator'
 
 # 假设输入数据已经用9.2.1小节中的方法转换成了单词编号的格式。
 SRC_TRAIN_DATA = data_path + "train.en"  # 源语言输入文件。
@@ -23,7 +24,7 @@ HIDDEN_SIZE = 1024  # LSTM的隐藏层规模。
 NUM_LAYERS = 2  # 深层循环神经网络中LSTM结构的层数。
 SRC_VOCAB_SIZE = 10000  # 源语言词汇表大小。
 TRG_VOCAB_SIZE = 4000  # 目标语言词汇表大小。
-BATCH_SIZE = 100  # 训练数据batch的大小。
+BATCH_SIZE = 1024  # 训练数据batch的大小。
 NUM_EPOCH = 5  # 使用训练数据的轮数。
 KEEP_PROB = 0.8  # 节点不被dropout的概率。
 MAX_GRAD_NORM = 5  # 用于控制梯度膨胀的梯度大小上限。
