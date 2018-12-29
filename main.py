@@ -32,17 +32,19 @@ def main():
     latest_cpt_file = tf.train.latest_checkpoint(model_path)
     model.restore(sess, saver, latest_cpt_file)
     while True:
-        # input_english_text = "This is a test . <eos>"
-        input_english_text = input('输入关键词:\n').strip()
+        input_english_text = "This is a test . <eos>"
+        # input_english_text = input('输入关键词:\n').strip()
         english_id_list = [(src_id_dict[token] if token in src_id_dict else src_id_dict['<unk>'])
                            for token in input_english_text.split()]
-
+        print(english_id_list, len(english_id_list))
         output_ids = model.inference(sess, english_id_list)
 
         output_text = ''.join([trg_vocab[x] for x in output_ids])
+        print(output_ids, len(output_ids))
 
         # 输出翻译结果。
         print(output_text)
+        break
 
 
 if __name__ == "__main__":
