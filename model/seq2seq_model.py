@@ -92,7 +92,7 @@ class NMTModel(object):
 
             if self.mode == 'predict':
                 self.build_inference_decoder()
-                self.build_train_decoder()
+                # self.build_train_decoder()
             elif self.mode == 'train':
                 self.build_train_decoder()
                 self.build_inference_decoder()
