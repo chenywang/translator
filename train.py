@@ -71,10 +71,10 @@ def main():
                 # 记录情况
                 # log_writer.add_summary(summary, model.global_step.eval())
 
-            # 每个epoch保存一次
-            print('已完成{}epoch，保存该模型中'.format(epoch_idx))
-            checkpoint_path = os.path.join(model_path, model_name)
-            model.save(sess, saver, checkpoint_path, global_step=epoch_idx)
+                if batch_index % 100 == 0
+                    print('已完成{}epoch，保存该模型中'.format(epoch_idx))
+                    checkpoint_path = os.path.join(model_path, model_name)
+                    model.save(sess, saver, checkpoint_path, global_step=epoch_idx)
 
 
 if __name__ == "__main__":
