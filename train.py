@@ -5,6 +5,7 @@ import time
 
 import tensorflow as tf
 from tensorflow.python.platform import flags
+
 from config import model_path, TRG_TRAIN_DATA, SRC_TRAIN_DATA, model_name
 from model.seq2seq_model import NMTModel
 from util.data_util import gen_batch_train_data
@@ -45,7 +46,6 @@ def main():
     with tf.Session(config=config_proto) as sess:
         load_or_create_model(sess, model, saver)
         for epoch_idx in range(FLAGS.epoch):
-
             iterator = gen_batch_train_data(SRC_TRAIN_DATA, TRG_TRAIN_DATA, FLAGS.batch_size, shuffle=False)
             for batch_index, (src_input, src_size, trg_input, trg_output, trg_size) in enumerate(iterator):
                 start_time = time.time()

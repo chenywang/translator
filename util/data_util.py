@@ -97,8 +97,11 @@ def gen_batch_train_data(train_en_path, train_zh_path, batch_size, shuffle=False
             chunk = chunk[chunk['zh_len'] > 1]
 
             # 修正target input与target output
-            chunk['target_input'] = chunk['zh']
-            chunk['target_output'] = chunk['zh'].apply(lambda zh_list: [SOS_ID] + zh_list[:-1])
+            #   1.解码器的输入(trg_input)，形式如同"<sos> X Y Z"
+            #   2.解码器的目标输出(trg_output)，形式如同"X Y Z <eos>"
+            #   3.上面从文件中读到的目标句子是"X Y Z <eos>"的形式，我们需要从中生成"<sos> X Y Z"
+            chunk['target_input'] = chunk['zh'].apply(lambda zh_list: [SOS_ID] + zh_list[:-1])
+            chunk['target_output'] = chunk['zh']
 
             src_input, src_size, trg_input, trg_output, trg_size = np.array(chunk['en']), np.array(
                 chunk['en_len']), np.array(chunk['target_input']), np.array(
