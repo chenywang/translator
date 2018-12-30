@@ -12,7 +12,7 @@ from util.data_util import gen_batch_train_data
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-flags.DEFINE_integer('batch_size', 512, 'Batch size')
+flags.DEFINE_integer('batch_size', 100, 'Batch size')
 flags.DEFINE_integer('epoch', 100, 'Maximum # of training epochs')
 flags.DEFINE_boolean('retrain', True, 'retrain the model')
 FLAGS = flags.FLAGS
