@@ -111,10 +111,10 @@ def gen_batch_train_data(train_en_path, train_zh_path, batch_size, shuffle=False
             src_input = preprocessing.sequence.pad_sequences(src_input, maxlen=max(chunk['en_len']),
                                                              padding="post", truncating="post",
                                                              value=0)
-            trg_input = preprocessing.sequence.pad_sequences(trg_input, maxlen=max(chunk['en_len']),
+            trg_input = preprocessing.sequence.pad_sequences(trg_input, maxlen=max(chunk['zh_len']),
                                                              padding="post", truncating="post",
                                                              value=0)
-            trg_output = preprocessing.sequence.pad_sequences(trg_output, maxlen=max(chunk['en_len']),
+            trg_output = preprocessing.sequence.pad_sequences(trg_output, maxlen=max(chunk['zh_len']),
                                                               padding="post", truncating="post",
                                                               value=0)
 
