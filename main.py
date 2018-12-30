@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 # @Author : Michael-Wang
+import codecs
 import os
 
 import pandas as pd
@@ -15,10 +16,13 @@ def main():
     # 根据中文词汇表，将翻译结果转换为中文文字。
     print("获得中英文词汇表")
     src_df = pd.read_csv(SRC_VOCAB, sep='\t')
-    trg_df = pd.read_csv(TRG_VOCAB, sep='\t')
     src_vocab = list(src_df['word'])
     src_id_dict = dict((src_vocab[x], x) for x in range(len(src_vocab)))
-    trg_vocab = list(trg_df['word'])
+
+    # trg_df = pd.read_csv(TRG_VOCAB, sep='\t')
+    # trg_vocab = list(trg_df['word'])
+    with codecs.open(TRG_VOCAB, "r", "utf-8") as f_vocab:
+        trg_vocab = [w.strip() for w in f_vocab.readlines()]
 
     print("重建模型中")
     with tf.variable_scope("nmt_model", reuse=None):
@@ -41,7 +45,7 @@ def main():
 
         # 输出翻译结果。
         print(output_text)
-        break
+        # break
 
 
 if __name__ == "__main__":
