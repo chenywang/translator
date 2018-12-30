@@ -30,7 +30,8 @@ def main():
     output_op = model.inference(test_en_ids)
     sess = tf.Session()
     saver = tf.train.Saver()
-    saver.restore(sess, log_path)
+    latest_cpt_file = tf.train.latest_checkpoint(log_path)
+    saver.restore(sess, latest_cpt_file)
 
     # 读取翻译结果。
     output_ids = sess.run(output_op)
