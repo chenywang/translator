@@ -28,8 +28,9 @@ def main():
     sess = tf.Session()
     model.restore(sess, saver, latest_cpt_file)
     while True:
-        input_english_text = "This is a test . <eos>"
-        # input_english_text = input('输入关键词:\n').strip()
+        # input_english_text = "This is a test . <eos>"
+        input_english_text = input('输入关键词:\n').strip()
+        input_english_text += ' . <eos>'
         english_id_list = [(src_id_dict[token] if token in src_id_dict else src_id_dict['<unk>'])
                            for token in input_english_text.split()]
         print(english_id_list, len(english_id_list))

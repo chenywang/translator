@@ -77,7 +77,6 @@ class NMTModel(object):
     def build_decoder(self):
         with tf.variable_scope('decoder'):
             self.trg_embedding = tf.get_variable("trg_emb", [TRG_VOCAB_SIZE, HIDDEN_SIZE])
-
             # 定义softmax层的变量
             if SHARE_EMB_AND_SOFTMAX:
                 self.softmax_weight = tf.transpose(self.trg_embedding)

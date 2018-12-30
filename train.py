@@ -45,6 +45,7 @@ def main():
     saver = tf.train.Saver()
     with tf.Session(config=config_proto) as sess:
         load_or_create_model(sess, model, saver)
+        total_batch_index = 0
         for epoch_idx in range(FLAGS.epoch):
             iterator = gen_batch_train_data(SRC_TRAIN_DATA, TRG_TRAIN_DATA, FLAGS.batch_size, shuffle=False)
             for batch_index, (src_input, src_size, trg_input, trg_output, trg_size) in enumerate(iterator):
@@ -67,11 +68,11 @@ def main():
 
                 # 记录情况
                 # log_writer.add_summary(summary, model.global_step.eval())
-
-                if batch_index % 100 == 0:
-                    print('已完成{} epoch，保存该模型中'.format(batch_index))
+                total_batch_index += 1
+                if total_batch_index % 100 == 0:
+                    print('已完成{} 个batch，保存该模型中...'.format(total_batch_index))
                     checkpoint_path = os.path.join(model_path, model_name)
-                    model.save(sess, saver, checkpoint_path, global_step=batch_index)
+                    model.save(sess, saver, checkpoint_path, global_step=total_batch_index)
 
 
 if __name__ == "__main__":
