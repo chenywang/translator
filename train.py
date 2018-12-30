@@ -5,9 +5,6 @@ import time
 
 import tensorflow as tf
 from tensorflow.python.platform import flags
-
-# 使用给定的模型model上训练一个epoch，并返回全局步数。
-# 每训练200步便保存一个checkpoint。
 from config import model_path, TRG_TRAIN_DATA, SRC_TRAIN_DATA, model_name
 from model.seq2seq_model import NMTModel
 from util.data_util import gen_batch_train_data

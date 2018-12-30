@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 # @Author : Michael-Wang
-import codecs
 import os
 
+import pandas as pd
 import tensorflow as tf
 
 from config import SRC_VOCAB, model_path, TRG_VOCAB
@@ -13,23 +13,19 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def main():
     # 根据中文词汇表，将翻译结果转换为中文文字。
-    print("获得中文词汇表")
-    with codecs.open(TRG_VOCAB, "r", "utf-8") as f_vocab:
-        trg_vocab = [w.strip() for w in f_vocab.readlines()]
+    print("获得中英文词汇表")
+    src_df = pd.read_csv(SRC_VOCAB, sep='\t')
+    trg_df = pd.read_csv(TRG_VOCAB, sep='\t')
+    src_vocab = list(src_df['word'])
+    src_id_dict = dict((src_vocab[x], x) for x in range(len(src_vocab)))
+    trg_vocab = list(trg_df['word'])
 
-    # 根据英文词汇表，将测试句子转为单词ID。
-    print("获得英文词汇表")
-    with codecs.open(SRC_VOCAB, "r", "utf-8") as f_vocab:
-        src_vocab = [w.strip() for w in f_vocab.readlines()]
-        src_id_dict = dict((src_vocab[x], x) for x in range(len(src_vocab)))
-
-    sess = tf.Session()
-    # 定义训练用的循环神经网络模型。
     print("重建模型中")
     with tf.variable_scope("nmt_model", reuse=None):
         model = NMTModel('predict')
     saver = tf.train.Saver()
     latest_cpt_file = tf.train.latest_checkpoint(model_path)
+    sess = tf.Session()
     model.restore(sess, saver, latest_cpt_file)
     while True:
         input_english_text = "This is a test . <eos>"

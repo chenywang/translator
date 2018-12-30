@@ -132,45 +132,45 @@ class NMTModel(object):
     def build_inference_decoder(self):
         # 设置解码的最大步数。这是为了避免在极端情况出现无限循环的问题。
         max_decode_len = 100
+        with tf.variable_scope("rnn/multi_rnn_cell"):
+            # 使用一个变长的TensorArray来存储生成的句子。
+            init_array = tf.TensorArray(dtype=tf.int32, size=0,
+                                        dynamic_size=True, clear_after_read=False)
+            # 填入第一个单词<sos>作为解码器的输入。
+            init_array = init_array.write(0, SOS_ID)
+            # 构建初始的循环状态。循环状态包含循环神经网络的隐藏状态，保存生成句子的
+            # TensorArray，以及记录解码步数的一个整数step。
+            init_loop_var = (self.enc_state, init_array, 0)
 
-        # 使用一个变长的TensorArray来存储生成的句子。
-        init_array = tf.TensorArray(dtype=tf.int32, size=0,
-                                    dynamic_size=True, clear_after_read=False)
-        # 填入第一个单词<sos>作为解码器的输入。
-        init_array = init_array.write(0, SOS_ID)
-        # 构建初始的循环状态。循环状态包含循环神经网络的隐藏状态，保存生成句子的
-        # TensorArray，以及记录解码步数的一个整数step。
-        init_loop_var = (self.enc_state, init_array, 0)
+            # tf.while_loop的循环条件：
+            # 循环直到解码器输出<eos>，或者达到最大步数为止。
+            def continue_loop_condition(state, trg_ids, step):
+                return tf.reduce_all(tf.logical_and(
+                    tf.not_equal(trg_ids.read(step), EOS_ID),
+                    tf.less(step, max_decode_len - 1)))
 
-        # tf.while_loop的循环条件：
-        # 循环直到解码器输出<eos>，或者达到最大步数为止。
-        def continue_loop_condition(state, trg_ids, step):
-            return tf.reduce_all(tf.logical_and(
-                tf.not_equal(trg_ids.read(step), EOS_ID),
-                tf.less(step, max_decode_len - 1)))
+            def loop_body(state, trg_ids, step):
+                # 读取最后一步输出的单词，并读取其词向量。
+                trg_input = [trg_ids.read(step)]
+                trg_emb = tf.nn.embedding_lookup(self.trg_embedding,
+                                                 trg_input)
+                # 这里不使用dynamic_rnn，而是直接调用dec_cell向前计算一步。
+                dec_outputs, next_state = self.dec_cell.call(
+                    state=state, inputs=trg_emb)
+                # 计算每个可能的输出单词对应的logit，并选取logit值最大的单词作为
+                # 这一步的而输出。
+                output = tf.reshape(dec_outputs, [-1, HIDDEN_SIZE])
+                logits = (tf.matmul(output, self.softmax_weight)
+                          + self.softmax_bias)
+                next_id = tf.argmax(logits, axis=1, output_type=tf.int32)
+                # 将这一步输出的单词写入循环状态的trg_ids中。
+                trg_ids = trg_ids.write(step + 1, next_id[0])
+                return next_state, trg_ids, step + 1
 
-        def loop_body(state, trg_ids, step):
-            # 读取最后一步输出的单词，并读取其词向量。
-            trg_input = [trg_ids.read(step)]
-            trg_emb = tf.nn.embedding_lookup(self.trg_embedding,
-                                             trg_input)
-            # 这里不使用dynamic_rnn，而是直接调用dec_cell向前计算一步。
-            dec_outputs, next_state = self.dec_cell.call(
-                state=state, inputs=trg_emb)
-            # 计算每个可能的输出单词对应的logit，并选取logit值最大的单词作为
-            # 这一步的而输出。
-            output = tf.reshape(dec_outputs, [-1, HIDDEN_SIZE])
-            logits = (tf.matmul(output, self.softmax_weight)
-                      + self.softmax_bias)
-            next_id = tf.argmax(logits, axis=1, output_type=tf.int32)
-            # 将这一步输出的单词写入循环状态的trg_ids中。
-            trg_ids = trg_ids.write(step + 1, next_id[0])
-            return next_state, trg_ids, step + 1
-
-        # 执行tf.while_loop，返回最终状态。
-        state, trg_ids, step = tf.while_loop(
-            continue_loop_condition, loop_body, init_loop_var)
-        self.target_id_list = trg_ids.stack()
+            # 执行tf.while_loop，返回最终状态。
+            state, trg_ids, step = tf.while_loop(
+                continue_loop_condition, loop_body, init_loop_var)
+            self.target_id_list = trg_ids.stack()
 
     def train(self, sess, src_input, src_size, trg_input, trg_output, trg_size):
         feed_dict = {
